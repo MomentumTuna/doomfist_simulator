@@ -13,7 +13,7 @@
 // 定义电机控制用常量
  
 // 电机内部输出轴旋转一周步数
-const int STEPS_PER_ROTOR_REV = 32; 
+const int STEPS_PER_ROTOR_REV = 64; 
  
 //  减速比
 const int GEAR_REDUCTION = 64;
@@ -38,7 +38,7 @@ int StepsRequired;
 // 电机控制引脚为 8,9,10,11 
 // 以上引脚依次连接在ULN2003 驱动板 In1, In2, In3, In4 
  
-Stepper steppermotor(STEPS_PER_ROTOR_REV, 8, 10, 9, 11); 
+Stepper steppermotor(STEPS_PER_ROTOR_REV, 2, 3, 4, 5); 
  
 void setup()
 {
@@ -47,21 +47,21 @@ void setup()
  
 void loop()
 {
-  // 极慢转动4步用于观察ULN2003电机驱动板LED变化
-  steppermotor.setSpeed(1);    
-  StepsRequired  =  4;
-  steppermotor.step(StepsRequired);
-  delay(1000);
+  // // 极慢转动4步用于观察ULN2003电机驱动板LED变化
+  // steppermotor.setSpeed(1);    
+  // StepsRequired  =  4;
+  // steppermotor.step(StepsRequired);
+  // delay(1000);
  
    // 慢速顺时针旋转一圈
   StepsRequired  =  STEPS_PER_OUT_REV; 
-  steppermotor.setSpeed(500);   
+  steppermotor.setSpeed(2000);   
   steppermotor.step(StepsRequired);
   delay(1000);
   
   // 快速逆时针旋转一圈
   StepsRequired  =  - STEPS_PER_OUT_REV;   
-  steppermotor.setSpeed(800);  
+  steppermotor.setSpeed(2000);  
   steppermotor.step(StepsRequired);
   delay(2000);
  
