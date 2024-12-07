@@ -34,7 +34,7 @@ int first_open;
 void IMU_offset(); //校准陀螺仪零漂值
 float acc_real(int acc);//加速度计真实值
 float gyro_real(int gyro,int gyro_offset);//陀螺仪真实值
-float FOCF(float acc_m,float gyro_m,float* last_angle);//角度解算
+float FOCF(float acc_m,float gyro_m,float* last_angle,int* angleChanged);//角度解算
 
 int acc_precision=16384;//加速度计精度
 float gyro_precision=16.4;//陀螺仪精度
@@ -51,7 +51,7 @@ int pin_dcmotordirc=7;
 
 //直流电机速度变量
 int dcmotorspeed=0;
-
+int dcmotorspeed_temp=0;
 //上下沿变量
 int trigger1_prev;
 int trigger1_cur;
@@ -59,6 +59,8 @@ int trigger1_cur;
 //时间记录
 int counter=0;
 int counter_start=0;
+
+int ishit=0;
 
 void setup() {
   //pin初始化
@@ -79,6 +81,8 @@ void setup() {
   counter_start=0;
   dcmotorspeed=0;
   first_open=1;
+
+  ishit=0;
 
   Wire.begin(); // 初始化I2C通信
 
@@ -112,25 +116,31 @@ void loop() {
   IMU_Data.GyX = Wire.read() << 8 | Wire.read();
   IMU_Data.GyY = Wire.read() << 8 | Wire.read();
   IMU_Data.GyZ = Wire.read() << 8 | Wire.read();
+
+  Serial.begin(9600);
   if(first_open){
     IMU_offset();
     first_open=0;
   }
+  Serial.print("first_open:");
+  Serial.print(first_open);
+
   IMU_Data.Roll_a=atan2(acc_real(IMU_Data.AcY),acc_real(IMU_Data.AcZ))*180/PI;
-  IMU_Data.Yaw_a=atan2(acc_real(IMU_Data.AcX),acc_real(IMU_Data.AcY))*180/PI;
-  IMU_Data.Pitch=atan2(acc_real(IMU_Data.AcX),acc_real(IMU_Data.AcZ))*180/PI;
+  IMU_Data.Yaw_a=atan2(acc_real(IMU_Data.AcX),acc_real(IMU_Data.AcZ))*180/PI;
+  IMU_Data.Pitch=atan2(acc_real(IMU_Data.AcX),acc_real(IMU_Data.AcY))*180/PI;
   
   IMU_Data.Roll_g=gyro_real(IMU_Data.GyX,IMU_Data.offset_gx);
-  IMU_Data.Yaw_g=gyro_real(IMU_Data.GyY,IMU_Data.offset_gy);
-  IMU_Data.Pitch_g=gyro_real(IMU_Data.GyZ,IMU_Data.offset_gz);
+  IMU_Data.Yaw_g=gyro_real(IMU_Data.GyZ,IMU_Data.offset_gz);
+  IMU_Data.Pitch_g=gyro_real(IMU_Data.GyY,IMU_Data.offset_gy);
 
-  IMU_Data.Roll=FOCF(IMU_Data.Roll_a,IMU_Data.Roll_g,&IMU_Data.lastRoll);
-  IMU_Data.Pitch=FOCF(IMU_Data.Pitch_a,IMU_Data.Pitch_g,&IMU_Data.lastPitch);
-  IMU_Data.Yaw=FOCF(IMU_Data.Yaw_a,IMU_Data.Yaw_g,&IMU_Data.lastYaw);
+  int RollChanged,PitchChanged,YawChanged;
+  IMU_Data.Roll=FOCF(IMU_Data.Roll_a,IMU_Data.Roll_g,&IMU_Data.lastRoll,&RollChanged);
+  IMU_Data.Pitch=FOCF(IMU_Data.Pitch_a,IMU_Data.Pitch_g,&IMU_Data.lastPitch,&PitchChanged);
+  IMU_Data.Yaw=FOCF(IMU_Data.Yaw_a,IMU_Data.Yaw_g,&IMU_Data.lastYaw,&YawChanged);
 
   //读取串口发送的数据
   if(Serial.available()>0){
-    int isHit=Serial.parseInt();
+    ishit=Serial.parseInt();
   }
 
   //判断开关情况
@@ -159,15 +169,65 @@ void loop() {
 
   if(counter_start){
     counter++;
+  }else{
+    if(counter>0)counter--;
   }
 
   //飞轮直流电机控制
   // if(!trigger1_cur){
-  //   if(counter%160000&&dcmotorspeed<127)dcmotorspeed++;
+  //   if(counter%160000&&dcmotorspeed<127){
+  //     dcmotorspeed++;
+  //     dcmotorspeed_temp=dcmotorspeed;
+  //   }
   // }else{
-  //   if()
-  //   // if(counter%160000&&dcmotorspeed>0)dcmotorspeed--;
+  //   if(!counter_start&&counter>0){
+  //     if(PitchChanged||YawChanged){
+  //       if(dcmotorspeed<255){
+  //         dcmotorspeed++;
+  //         Serial.print("TTT");
+  //         }
+  //     }else { if(dcmotorspeed>dcmotorspeed_temp){
+  //       dcmotorspeed--;
+  //       Serial.print("HHH");
+  //     }}
+  //   }else{
+  //     if(counter==0) dcmotorspeed=0;
+  //   }
   // }
+  int charging_state=counter_start;
+  int punching_state=!counter_start&&counter>0;
+  int rest_state=!counter_start&&counter==0;
+  
+  if(charging_state){
+    if(dcmotorspeed<255){
+      dcmotorspeed++;
+      dcmotorspeed_temp=dcmotorspeed;
+    }
+  }
+
+  if(punching_state){
+    if(YawChanged||PitchChanged){
+      if(dcmotorspeed<255){
+        dcmotorspeed++;
+      }
+    }else{
+      if(dcmotorspeed>dcmotorspeed_temp){
+        dcmotorspeed--;
+      }
+    }
+    if(ishit==1){
+      dcmotorspeed=0;
+      dcmotorspeed_temp=0;
+    }
+  }
+
+  if(rest_state){
+    dcmotorspeed=0;
+    dcmotorspeed_temp=0;
+  }
+  
+
+
   analogWrite(pin_dcmotorspeed,dcmotorspeed);
   
   if(digitalRead(pin_trigger2)){
@@ -175,32 +235,47 @@ void loop() {
   else{
     digitalWrite(pin_dcmotordirc,LOW);
     }
+  
 
 
 
-  Serial.begin(9600);
-  Serial.print("IMU_Data.AcX:");
-  Serial.print(IMU_Data.AcX);
-  Serial.print(" IMU_Data.AcY:");
-  Serial.print(IMU_Data.AcY);
-  Serial.print(" IMU_Data.AcZ");
-  Serial.print(IMU_Data.AcZ);
-  Serial.print(" IMU_Data.Roll");
+
+  // Serial.print("IMU_Data.AcX:");
+  // Serial.print(IMU_Data.AcX);
+  // Serial.print(" IMU_Data.AcY:");
+  // Serial.print(IMU_Data.AcY);
+  // Serial.print(" IMU_Data.AcZ");
+  // Serial.print(IMU_Data.AcZ);
+  Serial.print(" counter_start");
+  Serial.print(counter_start);
+  Serial.print(" Roll");
   Serial.print(IMU_Data.Roll);
-  Serial.print(" IMU_Data.Pitch:");
+  Serial.print(" Pitch:");
   Serial.print(IMU_Data.Pitch);
-  Serial.print(" IMU_Data.Yaw:");
+  Serial.print(" Yaw:");
   Serial.print(IMU_Data.Yaw);
-  Serial.print("IMU_Data.offset_gx: ");
-  Serial.print(IMU_Data.offset_gx);
-  Serial.print(" IMU_Data.offset_gy: ");
-  Serial.print(IMU_Data.offset_gy);
-  Serial.print(" IMU_Data.offset_gz: ");
-  Serial.print(IMU_Data.offset_gz);
+  Serial.print(" Roll_changed:");
+  Serial.print(RollChanged);
+  Serial.print(" Pitch_changed:");
+  Serial.print(PitchChanged);
+  Serial.print(" Yaw_changed:");
+  Serial.print(YawChanged);
+  // Serial.print("IMU_Data.offset_gx: ");
+  // Serial.print(IMU_Data.offset_gx);
+  // Serial.print(" IMU_Data.offset_gy: ");
+  // Serial.print(IMU_Data.offset_gy);
+  // Serial.print(" IMU_Data.offset_gz: ");
+  // Serial.print(IMU_Data.offset_gz);
   Serial.print(" trigger1_cur: ");
   Serial.print(trigger1_cur);
   Serial.print(" counter: ");
   Serial.print(counter);
+  Serial.print(" dcmotorspeed:");
+  Serial.print(dcmotorspeed);
+  Serial.print(" dcmotorspeed_temp:");
+  Serial.print(dcmotorspeed_temp);
+  Serial.print(" ishit:");
+  Serial.print(ishit);
   Serial.print("\n");
 
 Serial.end();
@@ -238,9 +313,15 @@ float gyro_real(int gyro,int gyro_offset){
 #define Ka 0.80  //加速度解算权重
 #define dt 0.005 //采样间隔（单位：秒）
  
-float FOCF(float acc_m,float gyro_m,float* last_angle){
+float FOCF(float acc_m,float gyro_m,float* last_angle,int* angleChanged){
     float temp_angle;
     temp_angle=Ka*acc_m+(1-Ka)*(*last_angle+gyro_m*dt);
+    if(temp_angle-*last_angle>0.5||temp_angle-*last_angle<-0.5){
+        *angleChanged=1;
+    }
+    else{
+        *angleChanged=0;
+    }
     *last_angle=temp_angle;
     return temp_angle;
 }

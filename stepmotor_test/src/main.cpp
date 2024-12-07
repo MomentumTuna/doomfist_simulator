@@ -54,16 +54,16 @@ void loop()
   // delay(1000);
  
    // 慢速顺时针旋转一圈
-  StepsRequired  =  STEPS_PER_OUT_REV; 
-  steppermotor.setSpeed(2000);   
-  steppermotor.step(StepsRequired);
-  delay(1000);
+  // StepsRequired  =  STEPS_PER_OUT_REV; 
+  // steppermotor.setSpeed(2000);   
+  // steppermotor.step(StepsRequired);
+  // delay(1000);
   
   // 快速逆时针旋转一圈
   StepsRequired  =  - STEPS_PER_OUT_REV;   
-  steppermotor.setSpeed(2000);  
+  steppermotor.setSpeed(20000);  
   steppermotor.step(StepsRequired);
-  delay(2000);
+  delay(10);
  
 }
 
