@@ -1,25 +1,26 @@
 #include <Arduino.h>
 
 // put function declarations here:
-int myFunction(int, int);
 
-int pin_dcmotorspeed=6;
+int pin_dcmotorspeed=3;
+int pin_dcmotor_dirc=2;
+
+int dc_motor_speed=0;
+
 
 void setup() {
     pinMode(pin_dcmotorspeed,OUTPUT);
+    pinMode(pin_dcmotor_dirc,OUTPUT);
 }
 
 void loop() {
-    analogWrite(pin_dcmotorspeed,0);
-    delay(2000);
-    // digitalWrite(pin_dcmotordirc,HIGH);
-    analogWrite(pin_dcmotorspeed,100);
-    delay(2000);
-    // digitalWrite(pin_dcmotordirc,HIGH);
-    analogWrite(pin_dcmotorspeed,200);
-    delay(2000);
-    analogWrite(pin_dcmotorspeed,255);
-    delay(2000);
+  for(int i=100;i<220;i++){
+    analogWrite(pin_dcmotorspeed,i);
+    delay(5);
+  }
+  analogWrite(pin_dcmotorspeed,0);
+  delay(3000);
+ 
 }
 
 // put function definitions here:

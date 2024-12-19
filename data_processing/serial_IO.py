@@ -14,7 +14,7 @@ def readString():
     data=ser.readline()
     return data.decode('utf-8').strip()
 
-ser = serial.Serial('/dev/cu.usbserial-10', 9600, bytesize=8, parity='N', stopbits=1, timeout=1)
+ser = serial.Serial('/dev/cu.usbserial-110', 9600, bytesize=8, parity='N', stopbits=1, timeout=1)
 print("串口连接成功")
 # 读取Arduino发送的数据
 dcmotor_speed=0

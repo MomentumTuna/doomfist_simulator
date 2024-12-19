@@ -41,14 +41,11 @@ float gyro_precision=16.4;//陀螺仪精度
 
 
 //pin参数
-int pin_trigger1=13;
-int pin_trigger2=12;
-int pin_trigger3=11;
+int pin_trigger1=11;
 int pin_vibmotor1=10;
 int pin_vibmotor2=9;
-int pin_dcmotorspeed=6;
-int pin_dcmotordirc=7;
-
+int pin_hapitcmotorspeed=5;
+int pin_flywheelmotorspeed=6;
 //直流电机速度变量
 int dcmotorspeed=0;
 int dcmotorspeed_temp=0;
@@ -65,12 +62,10 @@ int ishit=0;
 void setup() {
   //pin初始化
   pinMode(pin_trigger1,INPUT);
-  pinMode(pin_trigger2,INPUT);
-  pinMode(pin_trigger3,INPUT);
   pinMode(pin_vibmotor1,OUTPUT);
   pinMode(pin_vibmotor2,OUTPUT);
-  pinMode(pin_dcmotordirc,OUTPUT);
-  pinMode(pin_dcmotorspeed,OUTPUT);
+  pinMode(pin_flywheelmotorspeed,OUTPUT);
+  pinMode(pin_hapitcmotorspeed,OUTPUT);
   
   //初始化上下沿变量
   trigger1_prev=1;
@@ -97,6 +92,7 @@ void setup() {
 
 void loop() {
   // 读取加速度和陀螺仪数据
+  Wire.begin();
   Wire.beginTransmission(MPU_ADDR);
   Wire.write(0x3B); // 从寄存器地址 0x3B 开始读取数据
   Wire.endTransmission(false);
@@ -228,18 +224,8 @@ void loop() {
   
 
 
-  analogWrite(pin_dcmotorspeed,dcmotorspeed);
+  analogWrite(pin_flywheelmotorspeed,dcmotorspeed);
   
-  if(digitalRead(pin_trigger2)){
-    digitalWrite(pin_dcmotordirc,HIGH);}
-  else{
-    digitalWrite(pin_dcmotordirc,LOW);
-    }
-  
-
-
-
-
   // Serial.print("IMU_Data.AcX:");
   // Serial.print(IMU_Data.AcX);
   // Serial.print(" IMU_Data.AcY:");
@@ -279,7 +265,7 @@ void loop() {
   Serial.print("\n");
 
 Serial.end();
-delay(10);
+delay(100);
 
 }
 
