@@ -169,27 +169,7 @@ void loop() {
     if(counter>0)counter--;
   }
 
-  //飞轮直流电机控制
-  // if(!trigger1_cur){
-  //   if(counter%160000&&dcmotorspeed<127){
-  //     dcmotorspeed++;
-  //     dcmotorspeed_temp=dcmotorspeed;
-  //   }
-  // }else{
-  //   if(!counter_start&&counter>0){
-  //     if(PitchChanged||YawChanged){
-  //       if(dcmotorspeed<255){
-  //         dcmotorspeed++;
-  //         Serial.print("TTT");
-  //         }
-  //     }else { if(dcmotorspeed>dcmotorspeed_temp){
-  //       dcmotorspeed--;
-  //       Serial.print("HHH");
-  //     }}
-  //   }else{
-  //     if(counter==0) dcmotorspeed=0;
-  //   }
-  // }
+  //电机控制
   int charging_state=counter_start;
   int punching_state=!counter_start&&counter>0;
   int rest_state=!counter_start&&counter==0;
@@ -221,18 +201,20 @@ void loop() {
     dcmotorspeed=0;
     dcmotorspeed_temp=0;
   }
+
+  //haptic force控制
+  if(ishit==1){
+    analogWrite(pin_hapitcmotorspeed,150);
+    delay(50);
+    }else{
+    analogWrite(pin_hapitcmotorspeed,0);
+    }
   
 
 
   analogWrite(pin_flywheelmotorspeed,dcmotorspeed);
   
-  // Serial.print("IMU_Data.AcX:");
-  // Serial.print(IMU_Data.AcX);
-  // Serial.print(" IMU_Data.AcY:");
-  // Serial.print(IMU_Data.AcY);
-  // Serial.print(" IMU_Data.AcZ");
-  // Serial.print(IMU_Data.AcZ);
-  Serial.print(" counter_start");
+  // Serial.print(" counter_start");
   Serial.print(counter_start);
   Serial.print(" Roll");
   Serial.print(IMU_Data.Roll);
@@ -246,12 +228,6 @@ void loop() {
   Serial.print(PitchChanged);
   Serial.print(" Yaw_changed:");
   Serial.print(YawChanged);
-  // Serial.print("IMU_Data.offset_gx: ");
-  // Serial.print(IMU_Data.offset_gx);
-  // Serial.print(" IMU_Data.offset_gy: ");
-  // Serial.print(IMU_Data.offset_gy);
-  // Serial.print(" IMU_Data.offset_gz: ");
-  // Serial.print(IMU_Data.offset_gz);
   Serial.print(" trigger1_cur: ");
   Serial.print(trigger1_cur);
   Serial.print(" counter: ");
@@ -260,6 +236,10 @@ void loop() {
   Serial.print(dcmotorspeed);
   Serial.print(" dcmotorspeed_temp:");
   Serial.print(dcmotorspeed_temp);
+  Serial.print(" charging_state:");
+  Serial.print(charging_state);
+  Serial.print(" punching_state:");
+  Serial.print(punching_state);
   Serial.print(" ishit:");
   Serial.print(ishit);
   Serial.print("\n");
@@ -268,6 +248,7 @@ Serial.end();
 delay(100);
 
 }
+
 
 void IMU_offset(){
     for(int i=0;i<OFFSET_COUNT;i++){
@@ -303,7 +284,8 @@ float FOCF(float acc_m,float gyro_m,float* last_angle,int* angleChanged){
     float temp_angle;
     temp_angle=Ka*acc_m+(1-Ka)*(*last_angle+gyro_m*dt);
     if(temp_angle-*last_angle>0.5||temp_angle-*last_angle<-0.5){
-        *angleChanged=1;
+        if(temp_angle-*last_angle>0.5){*angleChanged=1;}
+        if(temp_angle-*last_angle<-0.5){*angleChanged=-1;}
     }
     else{
         *angleChanged=0;

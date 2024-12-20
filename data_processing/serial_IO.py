@@ -46,16 +46,3 @@ def readString():
     data=ser.readline()
     return data.decode('utf-8').strip()
     
-def dcmotorspeed_control(MPU6050,trigger,counter,ishit):
-    dcmotorspeed=0
-    if trigger==1:
-        dcmotorspeed=counter/160000
-    else:
-        if counter>0:
-            if ishit==1:
-                dcmotorspeed=0
-            else:
-                dcmotorspeed=counter/160000
-            #根据gyro的数据控制转速
-    return dcmotorspeed
-    
